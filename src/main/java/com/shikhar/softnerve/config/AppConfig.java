@@ -1,5 +1,9 @@
 package com.shikhar.softnerve.config;
 
+import com.shikhar.softnerve.entity.Patient;
+import com.shikhar.softnerve.exceptions.ResourceNotFoundException;
+import com.shikhar.softnerve.repo.PatientRepo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -7,12 +11,18 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.stereotype.Service;
 
 @Configuration
-public class AppConfig {
+@Service
+public class AppConfig implements UserDetailsService {
+
+    @Autowired
+    private PatientRepo patientRepo;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -21,6 +31,14 @@ public class AppConfig {
         UserDetails user1 = User.builder().username("softnerve").password(passwordEncoder().encode("1234")).roles("ADMIN").build();
 
         return new InMemoryUserDetailsManager(admin, user1);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        Patient patient = this.patientRepo.findByName(username).orElseThrow(() -> new ResourceNotFoundException("Patient", "patient_email" + username, 0));
+
+        return (UserDetails) patient;
     }
 
     @Bean
